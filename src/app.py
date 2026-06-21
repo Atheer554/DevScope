@@ -45,6 +45,34 @@ st.set_page_config(
     page_icon="📊",
     layout="wide"
 )
+st.markdown("""
+<style>
+
+.main {
+    background-color: #121826;
+}
+
+h1 {
+    color: #E9D8FD;
+}
+
+h2, h3 {
+    color: #D6BCFA;
+}
+
+[data-testid="metric-container"] {
+    background-color: #1E2538;
+    border: 1px solid #B794F4;
+    padding: 20px;
+    border-radius: 15px;
+}
+
+[data-testid="stSidebar"] {
+    background-color: #1A2030;
+}
+
+</style>
+""", unsafe_allow_html=True)
 
 st.title("DevScope")
 st.caption("Analyze GitHub repositories with interactive visualizations")
@@ -72,93 +100,121 @@ if username:
         df = create_dataframe(data)
 
         # ==========================
-        # KPI CARDS
-        # ==========================
+# CHARTS
+# ==========================
 
-        avg_stars = round(df["stars"].mean(), 2)
-        repo_count = len(df)
-        max_stars = df["stars"].max()
+col1, col2 = st.columns(2)
 
-        col1, col2, col3 = st.columns(3)
+# --------------------------
+# DONUT CHART
+# --------------------------
 
-        with col1:
-            st.metric(
-                "Average Stars",
-                avg_stars
-            )
+language_counts = df["language"].value_counts()
 
-        with col2:
-            st.metric(
-                "Repositories",
-                repo_count
-            )
+language_df = language_counts.reset_index()
 
-        with col3:
-            st.metric(
-                "Highest Stars",
-                max_stars
-            )
+language_df.columns = ["language", "count"]
 
-        # ==========================
-        # CHART 1
-        # ==========================
+fig_donut = px.pie(
+    language_df,
+    names="language",
+    values="count",
+    hole=0.4,
+    title="💜 Language Distribution",
+    color_discrete_sequence=[
+        "#C4B5FD",
+        "#A78BFA",
+        "#D8B4FE",
+        "#F0ABFC",
+        "#F9A8D4",
+        "#93C5FD",
+        "#7DD3FC",
+        "#A5B4FC"
+    ]
+)
 
-        language_counts = df["language"].value_counts()
+fig_donut.update_layout(
+    paper_bgcolor="#121826",
+    plot_bgcolor="#121826",
+    font_color="#E9D8FD"
+)
 
-        language_df = language_counts.reset_index()
+# --------------------------
+# BAR CHART
+# --------------------------
 
-        language_df.columns = ["language", "count"]
+top_repos = (
+    df.sort_values("stars", ascending=False)
+      .head(10)
+)
 
-        fig = px.pie(
-            language_df,
-            names="language",
-            values="count",
-            hole=0.4,
-            title="Language Distribution"
-        )
+fig_bar = px.bar(
+    top_repos,
+    x="stars",
+    y="name",
+    orientation="h",
+    title="💜 Top Repositories"
+)
 
-        st.plotly_chart(fig, use_container_width=True)
+fig_bar.update_traces(
+    marker_color="#B794F4"
+)
 
-        # ==========================
-        # CHART 2
-        # ==========================
+fig_bar.update_layout(
+    paper_bgcolor="#121826",
+    plot_bgcolor="#121826",
+    font_color="#E9D8FD"
+)
 
-        top_repos = (
-            df.sort_values("stars", ascending=False)
-              .head(10)
-        )
+# --------------------------
+# DISPLAY TOP ROW
+# --------------------------
 
-        fig = px.bar(
-            top_repos,
-            x="stars",
-            y="name",
-            orientation="h",
-            title="Top Repositories by Stars"
-        )
+with col1:
+    st.plotly_chart(
+        fig_donut,
+        use_container_width=True
+    )
 
-        st.plotly_chart(fig, use_container_width=True)
+with col2:
+    st.plotly_chart(
+        fig_bar,
+        use_container_width=True
+    )
 
-        # ==========================
-        # CHART 3
-        # ==========================
+# --------------------------
+# SCATTER CHART
+# --------------------------
 
-        fig = px.scatter(
-            df,
-            x="stars",
-            y="forks",
-            hover_name="name",
-            title="Stars vs Forks"
-        )
+fig_scatter = px.scatter(
+    df,
+    x="stars",
+    y="forks",
+    hover_name="name",
+    title="💜 Stars vs Forks"
+)
 
-        st.plotly_chart(fig, use_container_width=True)
+fig_scatter.update_traces(
+    marker=dict(
+        color="#C084FC",
+        size=10
+    )
+)
 
-        # ==========================
-        # DATA TABLE
-        # ==========================
+fig_scatter.update_layout(
+    paper_bgcolor="#121826",
+    plot_bgcolor="#121826",
+    font_color="#E9D8FD"
+)
 
-        st.subheader("Repository Data")
+st.plotly_chart(
+    fig_scatter,
+    use_container_width=True
+)
 
-        st.dataframe(df)
+# ==========================
+# DATA TABLE
+# ==========================
 
-    else:
-        st.error("GitHub user not found")
+with st.expander("📋 View Repository Data"):
+    st.dataframe(df)
